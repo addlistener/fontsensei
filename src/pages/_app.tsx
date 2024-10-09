@@ -20,6 +20,7 @@ import {NextSeo} from "next-seo";
 import {api} from "../shared/api";
 import invariant from "tiny-invariant";
 import {getLocaleUrlPrefix} from "../browser/i18n/locales";
+import {env} from "../env";
 
 const originalToastError = toast.error;
 // do not auto close error toasts by default
@@ -140,6 +141,9 @@ function MyApp({
       </I18nProvider>
       <SpeedInsights/>
       <Analytics/>
+      {env.NEXT_PUBLIC_DOMAIN_NAME === 'fontsensei.com' && <Head>
+          <script defer src="https://um.fontsensei.com/script.js" data-website-id="f2f83fe4-0d44-4f66-8a87-a2d278cc7b7d"></script>
+      </Head>}
     </>
   );
 };
