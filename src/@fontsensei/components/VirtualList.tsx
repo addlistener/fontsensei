@@ -1,4 +1,4 @@
-import React, {type CSSProperties, forwardRef, useContext, useEffect, useState} from "react";
+import React, {type CSSProperties, forwardRef, useContext, useEffect, useMemo, useState} from "react";
 import {type FSFontItem} from "@fontsensei/core/types";
 import listFonts from "@fontsensei/core/listFonts";
 import {TagValueMsgLabelType, useScopedI18n} from "@fontsensei/locales";
@@ -82,7 +82,7 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
             <FaPlus />
         </span>}
         {fontItem.tags.map((tag) => {
-          return <span className="badge badge-ghost bg-white/30">
+          return <span key={tag} className="badge badge-ghost bg-white/30">
             {tTagValueMsg(tag as TagValueMsgLabelType)}
             {pageCtx?.onRemoveTag && <span className="hover:bg-white/70" onClick={(e) => {
               e.stopPropagation();
@@ -125,11 +125,10 @@ const VirtualList = ({
   tagValue,
   initialFontItemList,
   pageSize,
-}: { tagValue: string | undefined, initialFontItemList: FSFontItem[], pageSize: number }) => {
+}: { tagValue: string, initialFontItemList: FSFontItem[], pageSize: number }) => {
   const [list, setList] = useState(initialFontItemList);
 
   useEffect(() => {
-    // console.log('changed', tagValue, initialFontItemList);
     setList(initialFontItemList);
     void listFonts({
       tagValue,

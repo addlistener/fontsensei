@@ -11,7 +11,7 @@ import React, {
   type PropsWithChildren
 } from 'react';
 import LandingLayout from "../../shared/ui/LandingLayout";
-import {type TagValueMsgLabelType, useCurrentLocale, useI18n, useScopedI18n} from "@fontsensei/locales";
+import {LocaleStr, type TagValueMsgLabelType, useCurrentLocale, useI18n, useScopedI18n} from "@fontsensei/locales";
 import {useRouter} from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -33,6 +33,7 @@ import FeedbackModal from "../feedback/FeedbackModal";
 import {tClient} from "../../shared/api";
 import {toast} from "react-toastify";
 import {FaGithub} from "react-icons/fa6";
+import {tagToUrlSlug} from "../../@fontsensei/utils";
 
 const PAGE_SIZE = 10;
 
@@ -41,6 +42,29 @@ interface PageProps {
   countByTags: Record<string, number>;
   firstFontByTags: Record<string, string>;
 }
+
+const getDefaultTag = (currentLocale: LocaleStr) => {
+  switch (currentLocale) {
+    case "ja":
+      return "lang_ja";
+    case "zh-cn":
+      return "lang_zh-Hans";
+    case "zh-tw":
+      return "lang_zh-Hant";
+    case "ko":
+      return "lang_ko";
+    default:
+      return "all";
+  }
+}
+
+const getTagValue = (raw_tagValue: string | undefined, currentLocale: LocaleStr) => {
+  if (raw_tagValue) {
+    return raw_tagValue;
+  }
+
+  return getDefaultTag(currentLocale);
+};
 
 const TagButton = (props: PropsWithChildren<{
   isActive: boolean,
@@ -78,7 +102,10 @@ const FontPickerPage = (props: PageProps) => {
   const tLandingMsg = useScopedI18n('landingMsg');
   const tTagValueMsg = useScopedI18n('tagValueMsg');
   const router = useRouter();
-  const tagValue = router.query.slugList?.[0];
+  const raw_tagValue = router.query.slugList?.[0];
+  const defaultTag = useMemo(() => getDefaultTag(currentLocale), [currentLocale]);
+  const tagValue = useMemo(() => getTagValue(raw_tagValue, currentLocale), [raw_tagValue, currentLocale]);
+
   const tagDisplayName = useMemo(
     () => tTagValueMsg(tagValue as TagValueMsgLabelType),
     [tagValue]
@@ -115,7 +142,7 @@ const FontPickerPage = (props: PageProps) => {
     : '';
   const title = titlePrefix + PRODUCT_NAME + ' - ' + t('product.slogan');
 
-  const langTagList = useMemo(() => languageSpecificTags[currentLocale], [currentLocale]);
+  const langTagList = useMemo(() => languageSpecificTags[currentLocale].map(tagToUrlSlug), [currentLocale]);
   const tagList = useMemo(
     () => [...Object.keys(props.countByTags)]
       .filter(t => !langTagList.includes(t)),
@@ -157,10 +184,13 @@ const FontPickerPage = (props: PageProps) => {
                 ...tagList
               ].map((t) => <TagButton
                 key={t}
-                isActive={(tagValue === t) || ((t === "all") && !tagValue)}
+                isActive={(tagValue === t)}
                 tag={t}
                 font={props.firstFontByTags[t]}
-                href={(t === 'all' || !t) ? "/" : `/tag/${t}`}>
+                href={t === defaultTag
+                  ? "/"
+                  : `/tag/${t}`
+                }>
                 {tTagValueMsg(t as TagValueMsgLabelType)} {props.countByTags[t]}
               </TagButton>)
             }
@@ -177,7 +207,10 @@ const FontPickerPage = (props: PageProps) => {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const slugList = context.params?.slugList ?? [];
-  const tagValue = Array.isArray(slugList) ? slugList[0] : undefined;
+  const tagValue = getTagValue(
+    Array.isArray(slugList) ? slugList[0] : undefined,
+    (context.locale ?? "en") as LocaleStr
+  );
 
   const initialFontItemList = await listFonts({
     tagValue: tagValue,

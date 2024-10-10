@@ -29,12 +29,13 @@ import * as path from 'path';
 import csvParser from 'csv-parser';
 import { fileURLToPath } from 'url';
 import {uniq} from "lodash-es";
+import {tagToUrlSlug} from "../utils";
 type FontData = Record<string, string[] | undefined>;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const csvFilePath = path.join(__dirname, './raw/googleFonts/families.csv');
+const googleCsvFilePath = path.join(__dirname, './raw/googleFonts/families.csv');
 const jsonFilePath = path.join(__dirname, './raw/fontLibrary/families.json');
 const tagsJapanesePath = path.join(__dirname, './raw/fontSensei/tags-japanese.json');
 const tagsChineseSimplifiedPath = path.join(__dirname, './raw/fontSensei/tags-chinese-simplified.json');
@@ -48,10 +49,6 @@ const TAGS_BY_NAME_FILE = 'tagsByName.json';
 const COUNT_BY_TAGS_FILE = 'countByTags.json';
 const FIRST_FONT_BY_TAGS_FILE = 'firstFontByTags.json';
 
-const toUrlSlug = (tag: string) => {
-  return tag.toLowerCase().split(' ').join('-');
-};
-
 // Function to read JSON data
 const readJSON = (filePath: string): Promise<FontData> => {
   return new Promise((resolve, reject) => {
@@ -61,7 +58,7 @@ const readJSON = (filePath: string): Promise<FontData> => {
       }
       const parsed = JSON.parse(data);
       Object.keys(parsed).forEach((k) => {
-        parsed[k] = parsed[k].map(toUrlSlug);
+        parsed[k] = parsed[k].map(tagToUrlSlug);
       });
 
       resolve(parsed);
@@ -95,16 +92,38 @@ const countByTags = {} as Record<string, number>;
 const firstFontByTags = {} as Record<string, string>;
 const mergeData = async () => {
   try {
-    const familiesFromCSV = await parseCSV(csvFilePath);
+    const familiesFromGoogle = await parseCSV(googleCsvFilePath);
     const fontFamilyTags = await readJSON(jsonFilePath);
-    const tagsJapanese = await readJSON(tagsJapanesePath);
-    const tagsChineseSimplified = await readJSON(tagsChineseSimplifiedPath);
-    const tagsChineseTraditional = await readJSON(tagsChineseTraditionalPath);
-    const tagsKorean = await readJSON(tagsKoreanPath);
+    const tagsJapanese_raw = await readJSON(tagsJapanesePath);
+    const tagsJapanese = Object.fromEntries(Object.entries(tagsJapanese_raw).map(([k, v]) => {
+      return [k, ['lang_ja', ...v ?? []]];
+    }));
+    const tagsChineseSimplified_raw = await readJSON(tagsChineseSimplifiedPath);
+    const tagsChineseSimplified = Object.fromEntries(Object.entries(tagsChineseSimplified_raw).map(([k, v]) => {
+      return [k, ['lang_zh-Hans', ...v ?? []]];
+    }));
+    const tagsChineseTraditional_raw = await readJSON(tagsChineseTraditionalPath);
+    const tagsChineseTraditional = Object.fromEntries(Object.entries(tagsChineseTraditional_raw).map(([k, v]) => {
+      return [k, ['lang_zh-Hant', ...v ?? []]];
+    }));
+    const tagsKorean_raw = await readJSON(tagsKoreanPath);
+    const tagsKorean = Object.fromEntries(Object.entries(tagsKorean_raw).map(([k, v]) => {
+      return [k, ['lang_ko',...v ?? []]];
+    }));
 
     const mergedData: FontData = {};
 
-    familiesFromCSV.forEach((family) => {
+    const families = uniq([
+      ...familiesFromGoogle,
+
+      // it's weird that google is missing fonts in their Github csv.
+      ...Object.keys(tagsJapanese),
+      ...Object.keys(tagsChineseSimplified),
+      ...Object.keys(tagsChineseTraditional),
+      ...Object.keys(tagsKorean),
+    ]);
+
+    families.forEach((family) => {
       matched[family] = true;
       const tags = uniq([
         ...(fontFamilyTags[family] ?? []),
@@ -132,7 +151,7 @@ const mergeData = async () => {
 
     console.log(
       'missing font faces from fontLibrary:',
-      [...familiesFromCSV].filter((family) => !matched[family])
+      [...familiesFromGoogle].filter((family) => !matched[family])
     );
 
   } catch (error) {
