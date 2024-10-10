@@ -1,9 +1,6 @@
 import React from "react";
-
-const sanitizeFontName = (name: string) => name.replace(/ /g, '+');
-const sanitizeText = (text?: string) => text ? [
-  ...new Set([...text.replace(/ /g, ' ')])
-].join('') : undefined;
+import Head from "next/head";
+import {fontFamilyToUrlParam, textToUrlParam} from "../utils";
 
 export const GoogleFontHeaders = (props: {
   preConnect: boolean,
@@ -11,18 +8,22 @@ export const GoogleFontHeaders = (props: {
   strategy: 'swap' | 'block',
 }) => {
   const {preConnect, configList, strategy} = props;
-  return <>
+  return <Head>
     {preConnect && <>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
     </>}
     {configList.map(config => {
-      const family = sanitizeFontName(config.name);
-      const text = sanitizeText(config.text);
+      const family = fontFamilyToUrlParam(config.name);
+      const text = textToUrlParam(config.text);
+
+      if (family.startsWith('LXGW')) {
+        console.log('family', family, 'text', text);
+      }
 
       if (text) {
         return <link
-          key={family}
+          key={family + '&t=' + text}
           href={`https://fonts.googleapis.com/css2?family=${family}&text=${text}&display=${strategy}`}
           rel="stylesheet"
         />
@@ -34,7 +35,7 @@ export const GoogleFontHeaders = (props: {
         rel="stylesheet"
       />
     })}
-  </>;
+  </Head>;
 };
 
 

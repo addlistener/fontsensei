@@ -155,18 +155,21 @@ const FontPickerPage = (props: PageProps) => {
   const allFontConfigList = useMemo(
     () =>
       Object.keys(props.firstFontByTags).reduce(
-        (acc, tag) => [...acc, {name: props.firstFontByTags[tag]!, text: tag}],
+        (acc, tag) => [...acc, {
+          name: props.firstFontByTags[tag]!,
+          text: tTagValueMsg(tag as TagValueMsgLabelType),
+        }],
         [] as { name: string; text: string }[],
       ),
-    [props.firstFontByTags]
+    [props.firstFontByTags, tTagValueMsg]
   );
 
   return (
     <LandingLayout fullWidth={true} className="relative">
       <Head>
         <title>{title}</title>
-        <GoogleFontHeaders preConnect={true} configList={allFontConfigList} strategy="block"/>
       </Head>
+      <GoogleFontHeaders preConnect={true} configList={allFontConfigList} strategy="block"/>
 
       <div className="flex h-[calc(100vh-6rem)]">
         <div className="p-4 flex-0 w-[40%] min-w-[200px] h-full overflow-scroll">
