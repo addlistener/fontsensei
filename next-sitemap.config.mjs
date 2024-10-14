@@ -1,3 +1,5 @@
+import fs from "fs";
+
 const nextConfig = (await import('./next.config.js')).default;
 
 const hasLocaleInPath = (path) => {
@@ -45,6 +47,19 @@ const languageSpecificTags = {
     "sv": []
 };
 
+// Function to read JSON data
+const readJSON = (filePath) => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(filePath, 'utf-8', (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            const parsed = JSON.parse(data);
+            resolve(parsed);
+        });
+    });
+};
+
 
 /** @type {import('next-sitemap').IConfig} */
 const config = {
@@ -57,18 +72,32 @@ const config = {
     }),
 
     additionalPaths: async (config,) => {
-        console.log({languageSpecificTags});
+        const countByTags = await readJSON('public/data/countByTags.json');
+
+        console.log({languageSpecificTags, countByTags});
+        const allLocaleList = Object.keys(languageSpecificTags);
 
         const result = [];
-        Object.keys(languageSpecificTags).map(locale => {
-            languageSpecificTags[locale].map((tag) => {
-                // all possible values
-                result.push({
-                    loc: `/${locale}/tag/${tag}`,
-                    changefreq: config.changefreq,
-                    priority: config.priority,
-                    lastmod: config.autoLastmod ? new Date().toISOString() : undefined,
-                });
+        Object.keys(countByTags).map(tag => {
+            for (const locale of allLocaleList) {
+                if (languageSpecificTags[locale].includes(tag)) {
+                    // all possible values
+                    result.push({
+                        loc: `/${locale}/tag/${tag}`,
+                        changefreq: config.changefreq,
+                        priority: config.priority,
+                        lastmod: config.autoLastmod ? new Date().toISOString() : undefined,
+                    });
+
+                    return;
+                }
+            }
+
+            result.push({
+                loc: `/tag/${tag}`,
+                changefreq: config.changefreq,
+                priority: config.priority,
+                lastmod: config.autoLastmod ? new Date().toISOString() : undefined,
             });
         });
 
