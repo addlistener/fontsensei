@@ -15,38 +15,6 @@ const tryPath = (path, prefix) => {
     }
 }
 
-const languageSpecificTags = {
-    "en": [],
-    "es": [],
-    "pt-br": [],
-    "de": [],
-    "fr": [],
-    "he": [],
-    "ja": ["lang_ja", "mincho", "kaku gothic", "maru gothic", "tegaki", "fude", "poppu", "kawaii", "manga"],
-    "it": [],
-    "nl": [],
-    "ru": [],
-    "tr": [],
-    "id": [],
-    "zh-cn": ["lang_zh-hans", "lang_zh-hant", "songti", "heiti", "kaiti", "shouxie", "maobi", "meishuti"],
-    "zh-tw": ["lang_zh-hant", "lang_zh-hans", "songti", "heiti", "kaiti", "shouxie", "maobi", "meishuti"],
-    "ko": [
-        "lang_ko",
-        "dotum",
-        "batang",
-        "songeulssi",
-        "jangsikche",
-        // "piksellche",
-        // "gojeonche",
-        // "talnemo",
-        "kaelriponteu",
-        "kodingche",
-        // "gungsuhche"
-    ],
-    "ar": [],
-    "sv": []
-};
-
 // Function to read JSON data
 const readJSON = (filePath) => {
     return new Promise((resolve, reject) => {
@@ -73,6 +41,7 @@ const config = {
 
     additionalPaths: async (config,) => {
         const countByTags = await readJSON('public/data/countByTags.json');
+        const languageSpecificTags = await readJSON('public/data/languageSpecificTags.json');
 
         console.log({languageSpecificTags, countByTags});
         const allLocaleList = Object.keys(languageSpecificTags);
