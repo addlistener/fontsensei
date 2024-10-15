@@ -125,22 +125,22 @@ const createOuterElementType = forwardRef<HTMLDivElement>((props, ref) => (
 
 const VirtualList = ({
   tagValue,
+  filterText,
   initialFontItemList,
   pageSize,
-}: { tagValue: string, initialFontItemList: FSFontItem[], pageSize: number }) => {
+}: { tagValue: string, initialFontItemList: FSFontItem[], pageSize: number, filterText: string }) => {
   const [list, setList] = useState(initialFontItemList);
 
   useEffect(() => {
-    setList(initialFontItemList);
     void listFonts({
+      filterText,
       tagValue,
-      skip: pageSize,
+      skip: 0,
       take: 10000,
     }).then(res => {
-      setList([...initialFontItemList, ...res]);
+      setList([...res]);
     });
-  }, [tagValue, initialFontItemList]);
-
+  }, [tagValue, filterText, initialFontItemList]);
 
   const [configList, setConfigList] = useState([] as { name: string, text?: string }[]);
 
@@ -181,9 +181,26 @@ const VirtualList = ({
     );
   }, [list, text]);
 
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return <>
     <GoogleFontHeaders preConnect={false} configList={configList} strategy="block"/>
-    <AutoSizer>
+    {!isClient && <div>
+      {initialFontItemList.map((fontItem) => (
+        <Row
+          key={fontItem.family}
+          index={list.indexOf(fontItem)}
+          fontItem={fontItem}
+          text={text}
+          style={{}}
+          forwardedRef={() => void 0}
+        />
+      ))}
+    </div>}
+    {isClient && <AutoSizer>
       {({height, width}) => (
         <List
           className="List"
@@ -196,7 +213,7 @@ const VirtualList = ({
           {(props) => <RefForwardedRow {...props} fontItem={list[props.index]} text={text}/>}
         </List>
       )}
-    </AutoSizer>
+    </AutoSizer>}
   </>;
 };
 
