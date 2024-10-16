@@ -115,12 +115,6 @@ function MyApp({
     });
   }, []);
 
-  const isToolPage = router.pathname.startsWith('/ss')
-    || router.pathname.startsWith('/redirect');
-  if (isToolPage) {
-    return <Component {...restPageProps} />;
-  }
-
   return (
     <>
       <I18nProvider locale={pageProps.locale}>
