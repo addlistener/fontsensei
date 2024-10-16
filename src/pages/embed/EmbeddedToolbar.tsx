@@ -15,7 +15,7 @@ const EmbeddedToolbar: NonNullable<FontPickerPageContextOpts>['Toolbar'] = ({fon
     <div className="btn btn-sm btn-outline animate-none transition-none" onClick={(e) => {
       e.stopPropagation();
       (window.parent as Window | undefined)?.postMessage({
-        type: 'umami:set-token-done',
+        type: 'fontsensei:selectFont',
         fontItem: fontItem,
       }, '*');
     }}>
