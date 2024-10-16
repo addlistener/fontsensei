@@ -33,6 +33,8 @@ import ChooseLocaleModal from "../i18n/ChooseLocaleModal";
 import SwitchLocaleHint from "../i18n/SwitchLocaleHint";
 import {FaTag} from "react-icons/fa6";
 import MobileOnlyModal from "@fontsensei/components/modal/MobileOnlyModal";
+import useEmbedStore from "./embed/useEmbedStore";
+import EmbedModal from "./embed/EmbedModal";
 
 const PAGE_SIZE = 10;
 
@@ -51,6 +53,7 @@ export type MenuItem = {
   onClick?: () => void,
 };
 export type NavbarContextOpts = {
+  shouldHide?: boolean;
   extraLeftNode?: ReactNode;
   extraMenuItems?: MenuItem[];
 } | undefined;
@@ -87,6 +90,10 @@ const Navbar = (props: {fullWidth?: boolean, style?: React.CSSProperties }) => {
 
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  if (navbarContext?.shouldHide) {
+    return false;
+  }
 
   return <>
     <div className="h-16" />
@@ -267,6 +274,7 @@ const FontPickerPage = (props: PageProps) => {
   const raw_tagValue = router.query.slugList?.[0];
   const defaultTag = useMemo(() => getDefaultTag(currentLocale), [currentLocale]);
   const tagValue = useMemo(() => getTagValue(raw_tagValue, currentLocale), [raw_tagValue, currentLocale]);
+  const embedPopup = useEmbedStore(state => state.popup);
 
   const tagDisplayName = useMemo(
     () => tTagValueMsg(tagValue as TagValueMsgLabelType),
@@ -369,7 +377,7 @@ const FontPickerPage = (props: PageProps) => {
           }
         </div>
         <div className="my-4">
-            More tags
+          {t('landingMsg.More tags')}
         </div>
     </>
     }
@@ -419,7 +427,11 @@ const FontPickerPage = (props: PageProps) => {
         </Head>
         <GoogleFontHeaders preConnect={true} configList={allFontConfigList} strategy="block"/>
 
-        <div className="flex h-[calc(100vh-4rem)] gap-4">
+        <div className={cx(
+          "flex gap-4",
+          navbarContextOutside?.shouldHide ? "h-[100vh]" : false,
+          !navbarContextOutside?.shouldHide ? "h-[calc(100vh-4rem)]" : false,
+        )}>
           <div className={cx(
             "hidden md:block",
             "py-4 flex-0 w-[40%] min-w-[200px] h-full overflow-scroll",
@@ -430,15 +442,17 @@ const FontPickerPage = (props: PageProps) => {
             "py-4 flex-1 h-full overflow-scroll"
           )}>
             <input
-              className="input input-bordered w-full mb-4 bg-transparent"
+              className="h-12 mb-4 input input-bordered w-full bg-transparent"
               value={filterText}
               onChange={e => {
                 setFilterText(e.target.value);
               }}
-              placeholder="Filter font family"
+              placeholder={t("landingMsg.Filter by font family")}
             />
-            {!loading && <VirtualList tagValue={tagValue} filterText={debouncedFilterText} initialFontItemList={initialFontItemList} pageSize={PAGE_SIZE}/>}
-            {loading && <span className="loading loading-bars loading-sm"/>}
+            <div className="h-[calc(100%-4rem)]">
+              {!loading && <VirtualList tagValue={tagValue} filterText={debouncedFilterText} initialFontItemList={initialFontItemList} pageSize={PAGE_SIZE}/>}
+              {loading && <span className="loading loading-bars loading-sm"/>}
+            </div>
           </div>
         </div>
 
@@ -447,6 +461,7 @@ const FontPickerPage = (props: PageProps) => {
             {tagSelectorContent}
           </div>
         </MobileOnlyModal>
+        {embedPopup}
       </LandingLayout>
     </NavbarContext.Provider>
   );

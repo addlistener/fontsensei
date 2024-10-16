@@ -1,7 +1,7 @@
 import React, {type CSSProperties, forwardRef, useContext, useEffect, useMemo, useState} from "react";
 import {type FSFontItem} from "@fontsensei/core/types";
 import listFonts from "@fontsensei/core/listFonts";
-import {TagValueMsgLabelType, useScopedI18n} from "@fontsensei/locales";
+import {type TagValueMsgLabelType, useScopedI18n} from "@fontsensei/locales";
 import {throttle} from "lodash-es";
 import {GoogleFontHeaders} from "@fontsensei/components/GoogleFontHeaders";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -34,9 +34,36 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
   const tTagValueMsg = useScopedI18n('tagValueMsg');
   const pageCtx = useContext(FontPickerPageContext);
 
-  if (!fontItem) {
-    return <div key="END" className="h-[100px] overflow-hidden" style={style} onWheel={onWheel} ref={forwardedRef}
-                data-itemindex={index}>
+  if (!fontItem || (fontItem?.family === 'LOADING')) {
+    return <div
+      key="LOADING"
+      className={cx(
+        ITEM_HEIGHT_CLS,
+        "overflow-hidden"
+      )}
+      style={style}
+      onWheel={onWheel}
+      ref={forwardedRef}
+      data-itemindex={index}
+    >
+      <div className="text-center">
+        <span className="loading loading-bars" />
+      </div>
+    </div>;
+  }
+
+  if (fontItem?.family === 'THE_END') {
+    return <div
+      key="END"
+      className={cx(
+        ITEM_HEIGHT_CLS,
+        "overflow-hidden"
+      )}
+      style={style}
+      onWheel={onWheel}
+      ref={forwardedRef}
+      data-itemindex={index}
+    >
       <div className="text-center">
         THE END
       </div>
@@ -47,7 +74,7 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
     key={fontItem.family}
     className={cx(
       ITEM_HEIGHT_CLS,
-      "overflow-hidden cursor-pointer rounded-2xl",
+      "overflow-hidden rounded-2xl",
       "hover:shadow-xl hover:bg-white/30",
       "md:p-2"
     )}
@@ -56,10 +83,8 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
     ref={forwardedRef}
     data-itemindex={index}
   >
-    <a
-      href={'https://fonts.google.com/specimen/' + fontItem.family.split(' ').join('+')}
-      target="_blank"
-      className="inline-block h-full w-full"
+    <div
+      className="h-full w-full"
     >
       <div
         className={cx(
@@ -106,7 +131,8 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
       >
         {text}
       </div>
-    </a>
+      {pageCtx?.Toolbar?.({fontItem}) ?? false}
+    </div>
   </div>;
 };
 
@@ -129,7 +155,13 @@ const VirtualList = ({
   initialFontItemList,
   pageSize,
 }: { tagValue: string, initialFontItemList: FSFontItem[], pageSize: number, filterText: string }) => {
-  const [list, setList] = useState(initialFontItemList);
+  const [list, setList] = useState([
+    ...initialFontItemList,
+    {
+      family: 'LOADING',
+      tags: [],
+    } as unknown as FSFontItem
+  ]);
 
   useEffect(() => {
     void listFonts({
@@ -138,7 +170,13 @@ const VirtualList = ({
       skip: 0,
       take: 10000,
     }).then(res => {
-      setList([...res]);
+      setList([
+        ...res,
+        {
+          family: 'THE_END',
+          tags: [],
+        } as unknown as FSFontItem
+      ]);
     });
   }, [tagValue, filterText, initialFontItemList]);
 
@@ -207,7 +245,7 @@ const VirtualList = ({
           outerElementType={createOuterElementType}
           height={height}
           width={width}
-          itemCount={list.length + 1}
+          itemCount={list.length}
           itemSize={ITEM_HEIGHT}
         >
           {(props) => <RefForwardedRow {...props} fontItem={list[props.index]} text={text}/>}
