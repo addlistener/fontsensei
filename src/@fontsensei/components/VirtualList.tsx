@@ -11,8 +11,8 @@ import {FaPlus, FaXmark} from "react-icons/fa6";
 import {FontPickerPageContext} from "@fontsensei/components/fontPickerCommon";
 import {PRODUCT_NAME} from "../../browser/productConstants";
 
-const ITEM_HEIGHT = 140;
-const ITEM_HEIGHT_CLS = 'h-[140px]';
+const ITEM_HEIGHT = 200;
+const ITEM_HEIGHT_CLS = 'h-[200px]';
 
 // add a function onOuterWheel to window typing
 declare global {
@@ -99,13 +99,25 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
         <span className="font-bold badge badge-neutral badge-lg">
           {fontItem.family}
         </span>
+        <span className="text-lg text-gray">
+          {fontItem.metadata.variants.length} Variant(s)
+        </span>
+        <span className="text-lg text-gray">
+          {fontItem.metadata.axes.length} Axes
+        </span>
+      </div>
+      <div
+        className={cx(
+          "text-xl",
+          "flex items-center justify-start gap-1 mb-2"
+        )}>
         {pageCtx?.onAddTag && <span
             className="badge badge-ghost bg-white/30 hover:bg-white/70"
             onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            pageCtx?.onAddTag?.(fontItem.family);
-          }}>
+              e.stopPropagation();
+              e.preventDefault();
+              pageCtx?.onAddTag?.(fontItem.family);
+            }}>
             <FaPlus />
         </span>}
         {fontItem.tags.map((tag) => {
@@ -121,8 +133,9 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
           </span>;
         })}
       </div>
+      {pageCtx?.Toolbar?.({fontItem}) ?? false}
       <div
-        className="text-4xl rounded px-2 "
+        className="text-4xl rounded py-4"
         style={{
           fontFamily: `"${fontItem.family}"`,
           whiteSpace: 'nowrap',
@@ -131,7 +144,6 @@ const Row = ({index, style, fontItem, text, onWheel, forwardedRef}: RowProps) =>
       >
         {text}
       </div>
-      {pageCtx?.Toolbar?.({fontItem}) ?? false}
     </div>
   </div>;
 };
@@ -153,8 +165,15 @@ const VirtualList = ({
   tagValue,
   filterText,
   initialFontItemList,
+  placeholderText,
   pageSize,
-}: { tagValue: string, initialFontItemList: FSFontItem[], pageSize: number, filterText: string }) => {
+}: {
+  tagValue: string,
+  placeholderText: string | undefined;
+  initialFontItemList: FSFontItem[],
+  pageSize: number,
+  filterText: string
+}) => {
   const [list, setList] = useState([
     ...initialFontItemList,
     {
@@ -163,7 +182,10 @@ const VirtualList = ({
     } as unknown as FSFontItem
   ]);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
+    setIsLoading(true);
     void listFonts({
       filterText,
       tagValue,
@@ -177,6 +199,7 @@ const VirtualList = ({
           tags: [],
         } as unknown as FSFontItem
       ]);
+      setIsLoading(false);
     });
   }, [tagValue, filterText, initialFontItemList]);
 
@@ -184,22 +207,24 @@ const VirtualList = ({
 
   const tProduct = useScopedI18n('product');
   const lorem = tProduct('description', {productName: PRODUCT_NAME});
-  const [text, setText] = useState(lorem);
+  const [text, setText] = useState(placeholderText ?? lorem);
   useEffect(() => {
-    setText(lorem);
-  }, [lorem]);
+    setText(placeholderText ?? lorem);
+  }, [lorem, placeholderText]);
 
   useEffect(() => {
-    // throttle makes more sense because the user may be scrolling
-    // continously & slowly. debounce will never trigger.
-    const delayedUpdate = throttle((start, count) => {
+    const update = (start: number, count: number) => {
       setConfigList(
         list.slice(
           start,
           start + count,
         ).map(fontItem => ({name: fontItem.family, text: text})),
       );
-    }, 1000);
+    };
+
+    // throttle makes more sense because the user may be scrolling
+    // continuously & slowly. debounce will never trigger.
+    const delayedUpdate = throttle(update, 1000);
     window.onOuterWheel = (el) => {
       if (!el) {
         return;
@@ -214,8 +239,9 @@ const VirtualList = ({
       delayedUpdate(start, count);
     }
 
+    const ssrOuter = document.querySelector('#ssr-outer') ;
     window.onOuterWheel(
-      document.querySelector('#outer')
+      (ssrOuter as HTMLDivElement | null) ?? document.querySelector('#outer')
     );
   }, [list, text]);
 
@@ -224,9 +250,9 @@ const VirtualList = ({
     setIsClient(true);
   }, []);
 
-  return <>
+  return <div className="relative h-full w-full">
     <GoogleFontHeaders preConnect={false} configList={configList} strategy="block"/>
-    {!isClient && <div>
+    {!isClient && <div id="ssr-outer">
       {initialFontItemList.map((fontItem) => (
         <Row
           key={fontItem.family}
@@ -252,7 +278,10 @@ const VirtualList = ({
         </List>
       )}
     </AutoSizer>}
-  </>;
+    {isLoading && <div className="absolute inset-0 flex items-center justify-center bg-white/10">
+      <span className="loading loading-bars" />
+    </div>}
+  </div>;
 };
 
 export default VirtualList;

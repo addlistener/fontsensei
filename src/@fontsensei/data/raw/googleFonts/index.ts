@@ -41,6 +41,8 @@ export interface FontMetadata {
 
 export interface FontMetadataReduced {
   defaultSuffix: string;
+  variants: string[];
   designers: string[];
+  axes: AxesItem[];
 }
 

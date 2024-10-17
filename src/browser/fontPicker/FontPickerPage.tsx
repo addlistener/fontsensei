@@ -8,9 +8,9 @@ import React, {
   useMemo,
   forwardRef,
   type CSSProperties,
-  type PropsWithChildren, useContext, ReactNode
+  type PropsWithChildren, useContext, type ReactNode
 } from 'react';
-import {LocaleStr, type TagValueMsgLabelType, useCurrentLocale, useI18n, useScopedI18n} from "@fontsensei/locales";
+import {type LocaleStr, type TagValueMsgLabelType, useCurrentLocale, useI18n, useScopedI18n} from "@fontsensei/locales";
 import {useRouter} from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -28,7 +28,7 @@ import ProductIcon from "../ProductIcon";
 import locales, {langMap} from "../i18n/locales";
 import useUserPreferencesStore from "../page/useUserPreferencesStore";
 import {IoLanguage} from "react-icons/io5";
-import {FaBars} from "react-icons/fa";
+import {FaBars, FaSearch} from "react-icons/fa";
 import ChooseLocaleModal from "../i18n/ChooseLocaleModal";
 import SwitchLocaleHint from "../i18n/SwitchLocaleHint";
 import {FaTag} from "react-icons/fa6";
@@ -43,6 +43,7 @@ interface PageProps {
   initialFontItemList: FSFontItem[];
   countByTags: Record<string, number>;
   firstFontByTags: Record<string, string>;
+  placeholderText: string | undefined;
 }
 
 export type MenuItem = {
@@ -292,7 +293,7 @@ const FontPickerPage = (props: PageProps) => {
   useEffect(() => {
     const id = setTimeout(() => {
       setDebouncedFilterText(filterText);
-    }, 1000);
+    }, 500);
     return () => clearTimeout(id);
   }, [filterText]);
 
@@ -445,16 +446,26 @@ const FontPickerPage = (props: PageProps) => {
           <div className={cx(
             "py-4 flex-1 h-full overflow-scroll"
           )}>
-            <input
-              className="h-12 mb-4 input input-bordered w-full bg-transparent"
-              value={filterText}
-              onChange={e => {
-                setFilterText(e.target.value);
-              }}
-              placeholder={t("landingMsg.Filter by font family")}
-            />
+            <div className="flex items-center justify-start gap-2 mb-4">
+              {(filterText !== debouncedFilterText) && <span className="inline-block h-4 w-4 text-black/50 loading loading-sm"/>}
+              {(filterText === debouncedFilterText) && <FaSearch  className="inline-block h-4 w-4 text-black/50 flex items-center justify-start" /> }
+              <input
+                className="flex-1 h-12 input input-bordered w-full placeholder-black/50 bg-white/20 focus:outline-none shadow-md focus:shadow-lg"
+                value={filterText}
+                onChange={e => {
+                  setFilterText(e.target.value);
+                }}
+                placeholder={t("landingMsg.Filter by font family")}
+              />
+            </div>
             <div className="h-[calc(100%-4rem)]">
-              {!loading && <VirtualList tagValue={tagValue} filterText={debouncedFilterText} initialFontItemList={initialFontItemList} pageSize={PAGE_SIZE}/>}
+              {!loading && <VirtualList
+                  tagValue={tagValue}
+                  filterText={debouncedFilterText}
+                  initialFontItemList={initialFontItemList}
+                  placeholderText={props.placeholderText}
+                  pageSize={PAGE_SIZE}
+              />}
               {loading && <span className="loading loading-bars loading-sm"/>}
             </div>
           </div>
@@ -491,6 +502,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       locale: await getLocaleContent(context.locale),
       countByTags: await import("../../../public/data/countByTags.json").then(res => res.default as Record<string, number>),
       firstFontByTags: await import("../../../public/data/firstFontByTags.json").then(res => res.default as Record<string, string>),
+      placeholderText: context.query.text as string | undefined,
     } as PageProps
   };
 };
