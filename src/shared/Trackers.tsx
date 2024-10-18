@@ -1,12 +1,12 @@
 import {SpeedInsights} from "@vercel/speed-insights/next";
 import {Analytics} from "@vercel/analytics/react"
 import {PRODUCT_DOMAIN} from "../browser/productConstants";
-import Head from "next/head";
 import React from "react";
+import Script from "next/script";
 
 const UmamiScript = (props: {src: string, websiteId: string}) => {
   /* avoid gtag removing trackers, recommended by https://umami.is/docs/guides/google-tag-manager */
-  return (<Head><script>{
+  return (<Script id="um">{
     /* language=javascript */
     `(function () {
   var el = document.createElement('script');
@@ -14,7 +14,7 @@ const UmamiScript = (props: {src: string, websiteId: string}) => {
   el.setAttribute('data-website-id', '${props.websiteId}');
   document.body.appendChild(el);
 })();`
-  }</script></Head>);
+  }</Script>);
 };
 
 const Trackers = () => {
