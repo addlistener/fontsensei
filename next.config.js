@@ -65,14 +65,14 @@ const config = {
       },
     ]
   },
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: '/auth/:path*',
-  //       destination: '/api/auth/:path*'
-  //     },
-  //   ]
-  // },
+  async rewrites() {
+    return [
+      {
+        "source": "/um/:match*",
+        "destination": `https://um.slidde.co/:match*`,
+      },
+    ]
+  },
   eslint: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
